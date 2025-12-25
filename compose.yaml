@@ -1,0 +1,11 @@
+services:
+  streamlit-hub:
+    build: .
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./apps:/apps:rw
+    environment:
+      - APP_ROOT=/apps
+      - DEFAULT_APP=
+    restart: unless-stopped
