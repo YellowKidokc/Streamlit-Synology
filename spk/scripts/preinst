@@ -1,0 +1,14 @@
+#!/bin/bash
+# Pre-installation script for Streamlit Hub
+
+# Exit on error
+set -e
+
+# Check if Docker/Container Manager is available
+if ! command -v docker &> /dev/null; then
+    echo "Docker (Container Manager) is required but not installed."
+    exit 1
+fi
+
+echo "Pre-installation checks passed."
+exit 0

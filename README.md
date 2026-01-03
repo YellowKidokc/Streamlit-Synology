@@ -1,50 +1,231 @@
-# Streamlit Synology Hub
+# Streamlit Hub for Synology
 
-This repository packages a small Streamlit launcher that you can run on a Synology NAS. It lets you drop multiple Streamlit apps into a shared folder and switch between them from a single web UI.
+A Synology NAS package that lets you run and manage multiple Streamlit applications from a single web interface. Install it once, then add as many Streamlit apps as you want!
 
 ## Features
-- Runs in Docker (works with Synology's Container Manager/Docker package).
-- Mount a host folder; each `.py` file or sub-folder with an `app.py`, `main.py`, or `streamlit_app.py` becomes a selectable app.
-- Hot-reloads when files change (Streamlit default behavior).
-- Ships with a sample `hello_world` app.
 
-## Quick start (Synology Docker/Container Manager)
-1. **Prepare a folder** on your NAS (e.g., `streamlit-apps`). Put your Streamlit app files inside it; include at least one `.py` file with a `main()` (or `app()`) function.
-2. **Copy this repository** somewhere on your NAS and open a terminal/SSH session.
-3. **Create the container**:
+- **Synology Package (SPK)** - Install directly from Package Center
+- **Multi-App Hub** - Run 5, 10, or more Streamlit apps from one interface
+- **Easy App Management** - Just drop Python files into a folder
+- **Hot-Reload** - Changes appear automatically (Streamlit default behavior)
+- **Docker-Based** - Runs in a container via Synology's Container Manager
+
+## Installation Options
+
+### Option 1: Synology Package (Recommended)
+
+1. **Download or Build the SPK**
+   - Download the latest `.spk` file from [Releases](../../releases), OR
+   - Build it yourself:
+     ```bash
+     git clone https://github.com/YellowKidokc/Streamlit-Synology.git
+     cd Streamlit-Synology
+     ./build-spk.sh
+     ```
+     The SPK file will be in the `dist/` folder.
+
+2. **Install via Package Center**
+   - Open DSM and go to **Package Center**
+   - Click **Manual Install** (top-right)
+   - Browse and select the `.spk` file
+   - Follow the installation wizard
+
+3. **Access Streamlit Hub**
+   - Open `http://<your-nas-ip>:8501` in your browser
+   - Your apps folder is at `/volume1/docker/streamlit-hub/apps/`
+
+### Option 2: Docker Compose (Manual)
+
+If you prefer to run it manually without the SPK:
+
+1. **Clone the repository** to your NAS:
    ```bash
-   cd /path/to/Streamlit-Synology
+   git clone https://github.com/YellowKidokc/Streamlit-Synology.git
+   cd Streamlit-Synology
+   ```
+
+2. **Start the container**:
+   ```bash
    docker compose up -d
    ```
-   The container mounts `./apps` (in this repo) to `/apps` inside the container. Replace it with your NAS folder by editing `compose.yaml` if desired.
-4. **Open the UI** at `http://<NAS_IP>:8501`. Use the dropdown to pick any discovered app.
 
-### Adding or updating apps
-- Drop a new file like `apps/my_dashboard.py` (with a `main()` or `app()` function), or create a folder like `apps/sales_app/app.py`.
-- Streamlit reloads code automatically. You can also restart the container with `docker compose restart`.
+3. **Access the UI** at `http://<NAS_IP>:8501`
 
-### Environment variables
-- `APP_ROOT` (default `/apps`): where the launcher looks for apps.
-- `DEFAULT_APP` (optional): preselects an app by its folder/filename stem.
+## Adding Your Streamlit Apps
 
-### Custom Python dependencies
-For per-app dependencies, add a `requirements.txt` next to the app file or folder and install it inside the container (e.g., `docker exec -it <container> /bin/bash` then `pip install -r /apps/your_app/requirements.txt`). To change global dependencies, edit `requirements.txt` in this repo and rebuild (`docker compose up -d --build`).
+Once installed, adding apps is easy:
 
-### Stopping and removing
-```bash
-docker compose down
+### Method 1: Single-File Apps
+Drop a Python file into the apps folder:
+```
+/volume1/docker/streamlit-hub/apps/my_dashboard.py
 ```
 
-## File layout
-- `compose.yaml`: One-service stack exposing port 8501.
-- `Dockerfile`: Builds a minimal image with Streamlit and the launcher.
-- `streamlit_app.py`: Launcher that discovers and runs child apps.
-- `apps/`: Place your Streamlit apps here; includes `hello_world.py` as an example.
+Your app needs either a `main()` or `app()` function:
+```python
+import streamlit as st
+
+def main():
+    st.title("My Dashboard")
+    st.write("Hello from my custom app!")
+
+# Optional: allow running standalone
+if __name__ == "__main__":
+    main()
+```
+
+### Method 2: Multi-File Apps
+Create a subfolder with an entry point:
+```
+/volume1/docker/streamlit-hub/apps/
+  sales_app/
+    app.py          # or main.py or streamlit_app.py
+    utils.py
+    data/
+      sales.csv
+```
+
+The hub will discover any folder containing:
+- `streamlit_app.py`
+- `app.py`
+- `main.py`
+
+### Supported App Structures
+
+| Structure | Example |
+|-----------|---------|
+| Single file | `apps/dashboard.py` with `main()` function |
+| Folder with app.py | `apps/sales/app.py` |
+| Folder with main.py | `apps/analytics/main.py` |
+| Folder with streamlit_app.py | `apps/reports/streamlit_app.py` |
+
+## Managing Apps
+
+### Adding Apps
+Just copy files to the apps folder. They'll appear in the dropdown automatically.
+
+### Updating Apps
+Edit your files. Streamlit hot-reloads changes automatically.
+
+### Removing Apps
+Delete the file or folder. Refresh the page to update the list.
+
+### Custom Dependencies
+For apps that need extra Python packages:
+
+1. SSH into your NAS
+2. Access the container:
+   ```bash
+   docker exec -it streamlit-hub /bin/bash
+   ```
+3. Install packages:
+   ```bash
+   pip install pandas numpy plotly
+   ```
+
+For permanent changes, edit `requirements.txt` and rebuild:
+```bash
+docker compose up -d --build
+```
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `APP_ROOT` | `/apps` | Directory to scan for apps |
+| `DEFAULT_APP` | (none) | Pre-select an app by name |
+
+### Changing the Port
+
+Edit `compose.yaml` (or the Synology container settings):
+```yaml
+ports:
+  - "8080:8501"  # Access on port 8080 instead
+```
+
+## Building the SPK Package
+
+To build your own Synology package:
+
+```bash
+# Clone the repo
+git clone https://github.com/YellowKidokc/Streamlit-Synology.git
+cd Streamlit-Synology
+
+# Build the SPK (optional: specify version)
+./build-spk.sh 1.0.0
+
+# Find your package
+ls dist/
+# streamlit-hub-1.0.0-0001.spk
+```
+
+### Customizing the Package
+
+Before building:
+
+1. **Icons**: Replace `spk/PACKAGE_ICON.PNG` (72x72) and `spk/PACKAGE_ICON_256.PNG` (256x256)
+2. **Metadata**: Edit `spk/INFO` to change description, maintainer, etc.
+3. **Scripts**: Modify files in `spk/scripts/` for custom install behavior
+
+## File Structure
+
+```
+Streamlit-Synology/
+├── build-spk.sh           # Build script for SPK package
+├── compose.yaml           # Docker Compose configuration
+├── Dockerfile             # Container image definition
+├── requirements.txt       # Python dependencies
+├── streamlit_app.py       # Main hub/launcher application
+├── apps/                  # Your Streamlit apps go here
+│   └── hello_world.py     # Sample app
+├── spk/                   # Synology package files
+│   ├── INFO               # Package metadata
+│   ├── PACKAGE_ICON.PNG   # 72x72 icon
+│   ├── PACKAGE_ICON_256.PNG # 256x256 icon
+│   ├── conf/              # Package configuration
+│   └── scripts/           # Install/uninstall scripts
+└── dist/                  # Built SPK files (after running build)
+```
+
+## Requirements
+
+- Synology DSM 7.0 or later
+- Container Manager (Docker) package installed
+- About 500MB disk space
 
 ## Troubleshooting
-- If no apps appear, ensure the `APP_ROOT` folder exists and contains at least one `.py` file with `main()` or `app()`.
-- If a specific app fails to render, open the app file and confirm it defines `main()` (preferred) or `app()`; errors from that app will show in the UI.
 
-## Notes
-- The container runs as root by default. Adjust `user:` in `compose.yaml` if you need different permissions on your Synology volume.
-- Streamlit's default hot-reload watches files inside the mounted folder; large folders may consume more CPU.
+### No apps showing up
+- Ensure your `.py` files have a `main()` or `app()` function
+- Check that files aren't hidden (no `.` prefix)
+
+### App not loading
+- Check the container logs: `docker logs streamlit-hub`
+- Verify your app runs locally first: `streamlit run your_app.py`
+
+### Port conflict
+- Change the port in `compose.yaml` or Synology Container Manager settings
+
+### Permission issues
+- The container runs as root by default
+- Adjust file permissions on your apps folder if needed
+
+## Uninstalling
+
+### SPK Package
+- Go to Package Center > Installed
+- Find "Streamlit Hub" and click Uninstall
+- Your apps are preserved in `/volume1/docker/streamlit-hub/apps/`
+
+### Docker Compose
+```bash
+docker compose down
+docker rmi streamlit-hub:latest  # optional: remove image
+```
+
+## License
+
+MIT License - feel free to modify and distribute.

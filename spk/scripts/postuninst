@@ -1,0 +1,17 @@
+#!/bin/bash
+# Post-uninstallation script for Streamlit Hub
+
+set -e
+
+PACKAGE_NAME="streamlit-hub"
+SHARE_DIR="/volume1/docker/streamlit-hub"
+
+# Remove Docker image (optional - user might want to keep it)
+docker rmi streamlit-hub:latest 2>/dev/null || true
+
+# Note: We do NOT remove the apps directory to preserve user data
+echo "Streamlit Hub uninstalled."
+echo "Your apps are preserved at: ${SHARE_DIR}/apps"
+echo "Remove manually if no longer needed."
+
+exit 0
