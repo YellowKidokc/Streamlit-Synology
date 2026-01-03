@@ -1,0 +1,15 @@
+{
+    "port-config": {
+        "protocol-file": "streamlit-hub.sc"
+    },
+    "data-share": {
+        "shares": [
+            {
+                "name": "streamlit-apps",
+                "permission": {
+                    "rw": ["admin"]
+                }
+            }
+        ]
+    }
+}

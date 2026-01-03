@@ -1,0 +1,13 @@
+#!/bin/bash
+# Pre-uninstallation script for Streamlit Hub
+
+set -e
+
+PACKAGE_NAME="streamlit-hub"
+
+# Stop and remove container if running
+docker stop streamlit-hub 2>/dev/null || true
+docker rm streamlit-hub 2>/dev/null || true
+
+echo "Streamlit Hub container stopped."
+exit 0

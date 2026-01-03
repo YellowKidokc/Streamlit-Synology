@@ -1,0 +1,49 @@
+#!/bin/bash
+# Post-installation script for Streamlit Hub
+
+set -e
+
+PACKAGE_NAME="streamlit-hub"
+PACKAGE_DIR="/var/packages/${PACKAGE_NAME}"
+TARGET_DIR="${PACKAGE_DIR}/target"
+APPS_DIR="${PACKAGE_DIR}/apps"
+SHARE_DIR="/volume1/docker/streamlit-hub"
+
+# Create apps directory for user's Streamlit apps
+mkdir -p "${APPS_DIR}"
+mkdir -p "${SHARE_DIR}/apps"
+
+# Copy sample app if apps directory is empty
+if [ ! "$(ls -A ${SHARE_DIR}/apps 2>/dev/null)" ]; then
+    cp -r "${TARGET_DIR}/apps/"* "${SHARE_DIR}/apps/" 2>/dev/null || true
+fi
+
+# Build and start the Docker container
+cd "${TARGET_DIR}"
+
+# Build the Docker image
+docker build -t streamlit-hub:latest .
+
+# Create docker-compose override for Synology paths
+cat > "${TARGET_DIR}/docker-compose.synology.yml" << EOF
+services:
+  streamlit-hub:
+    image: streamlit-hub:latest
+    container_name: streamlit-hub
+    ports:
+      - "8501:8501"
+    volumes:
+      - ${SHARE_DIR}/apps:/apps:rw
+    environment:
+      - APP_ROOT=/apps
+      - DEFAULT_APP=
+    restart: unless-stopped
+    labels:
+      - "com.synology.package=${PACKAGE_NAME}"
+EOF
+
+echo "Streamlit Hub installed successfully."
+echo "Your apps directory is at: ${SHARE_DIR}/apps"
+echo "Access the hub at: http://<your-nas-ip>:8501"
+
+exit 0

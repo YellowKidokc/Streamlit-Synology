@@ -1,0 +1,63 @@
+#!/bin/bash
+# Service control script for Streamlit Hub
+
+PACKAGE_NAME="streamlit-hub"
+CONTAINER_NAME="streamlit-hub"
+PACKAGE_DIR="/var/packages/${PACKAGE_NAME}"
+TARGET_DIR="${PACKAGE_DIR}/target"
+SHARE_DIR="/volume1/docker/streamlit-hub"
+
+case "$1" in
+    start)
+        echo "Starting Streamlit Hub..."
+
+        # Check if container exists
+        if docker ps -a --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+            docker start ${CONTAINER_NAME}
+        else
+            # Create and start new container
+            docker run -d \
+                --name ${CONTAINER_NAME} \
+                --restart unless-stopped \
+                -p 8501:8501 \
+                -v "${SHARE_DIR}/apps:/apps:rw" \
+                -e APP_ROOT=/apps \
+                -e DEFAULT_APP= \
+                -l "com.synology.package=${PACKAGE_NAME}" \
+                streamlit-hub:latest
+        fi
+
+        echo "Streamlit Hub started on port 8501"
+        exit 0
+        ;;
+
+    stop)
+        echo "Stopping Streamlit Hub..."
+        docker stop ${CONTAINER_NAME} 2>/dev/null || true
+        echo "Streamlit Hub stopped."
+        exit 0
+        ;;
+
+    status)
+        if docker ps --format '{{.Names}}' | grep -q "^${CONTAINER_NAME}$"; then
+            exit 0  # Running
+        else
+            exit 1  # Not running
+        fi
+        ;;
+
+    restart)
+        $0 stop
+        sleep 2
+        $0 start
+        ;;
+
+    log)
+        docker logs ${CONTAINER_NAME}
+        ;;
+
+    *)
+        echo "Usage: $0 {start|stop|status|restart|log}"
+        exit 1
+        ;;
+esac
